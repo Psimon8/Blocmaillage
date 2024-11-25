@@ -9,16 +9,23 @@ def fill_empty_rows_with_format_nolimit(df):
         st.error("Le fichier importé ne contient pas suffisamment de données.")
         return df, 0
 
-    e_values = df.iloc[:, 4]  # Utiliser la colonne E pour la correspondance
+    e_values = df.iloc[:, 5]  # Utiliser la colonne F pour la correspondance
     k_values = df.iloc[:, 7]  # Valeurs de la colonne H
     cells_completed = 0  # Compteur pour les cellules complétées
 
     for i in range(last_row):
         current_e_value = e_values.iloc[i]
-        matched_rows = df[df.iloc[:, 4] == current_e_value].index.tolist()
+        matched_rows = df[df.iloc[:, 5] == current_e_value].index.tolist()
+
+        # Si aucune correspondance trouvée en colonne F, utiliser la colonne E
+        if not matched_rows:
+            current_e_value = df.iloc[i, 4]
+            matched_rows = df[df.iloc[:, 4] == current_e_value].index.tolist()
 
         col_index = 0  # Commencer à la première colonne de la plage étendue
         for k in matched_rows:
+            if col_index >= 20:  # Limiter le nombre de liens ajoutés à 20
+                break
             if 8 + col_index < df.shape[1] and pd.isna(df.iloc[i, 8 + col_index]):  # Vérifier si la cellule cible est vide
                 source_value = df.iloc[k, 7]  # 8 est la colonne H
                 if source_value not in k_values.iloc[i]:  # Vérifier si la valeur est déjà présente dans H
