@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+
 
 # Completer Bloc de Maillage V2 - Maillage inter Nolimit
 def fill_empty_rows_with_format_nolimit(sheet):
@@ -38,13 +37,3 @@ if uploaded_file is not None:
     df = pd.read_excel(uploaded_file)
     st.write("Aperçu du fichier importé:")
     st.write(df)
-
-    if st.button('Exécuter la fonction'):
-        # Configuration de l'authentification et accès à la feuille de calcul
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_name('path/to/credentials.json', scope)
-        client = gspread.authorize(creds)
-        
-        sheet = client.open("Nom de votre feuille de calcul").sheet1
-        cells_completed = fill_empty_rows_with_format_nolimit(sheet)
-        st.success(f'{cells_completed} cellules ont été complétées.')
