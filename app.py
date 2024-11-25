@@ -15,6 +15,7 @@ def fill_empty_rows_with_format_nolimit(df):
 
     for i in range(last_row):
         current_e_value = e_values.iloc[i]
+        current_url = df.iloc[i, 7]  # URL actuelle
         matched_rows = df[df.iloc[:, 5] == current_e_value].index.tolist()
 
         # Si aucune correspondance trouvée en colonne F, utiliser la colonne E
@@ -28,7 +29,7 @@ def fill_empty_rows_with_format_nolimit(df):
                 break
             if 8 + col_index < df.shape[1] and pd.isna(df.iloc[i, 8 + col_index]):  # Vérifier si la cellule cible est vide
                 source_value = df.iloc[k, 7]  # 8 est la colonne H
-                if source_value not in k_values.iloc[i]:  # Vérifier si la valeur est déjà présente dans H
+                if source_value != current_url and source_value not in k_values.iloc[i]:  # Vérifier si la valeur est déjà présente dans H et n'est pas l'URL actuelle
                     df.iloc[i, 8 + col_index] = source_value
                     cells_completed += 1  # Incrémenter le compteur pour chaque cellule complétée
                     col_index += 1  # Passer à la colonne suivante pour la prochaine insertion
@@ -44,7 +45,7 @@ def fill_empty_rows_with_format_nolimit(df):
                     break
                 if 8 + col_index < df.shape[1] and pd.isna(df.iloc[i, 8 + col_index]):  # Vérifier si la cellule cible est vide
                     source_value = df.iloc[k, 7]  # 8 est la colonne H
-                    if source_value not in k_values.iloc[i]:  # Vérifier si la valeur est déjà présente dans H
+                    if source_value != current_url and source_value not in k_values.iloc[i]:  # Vérifier si la valeur est déjà présente dans H et n'est pas l'URL actuelle
                         df.iloc[i, 8 + col_index] = source_value
                         cells_completed += 1  # Incrémenter le compteur pour chaque cellule complétée
                         col_index += 1  # Passer à la colonne suivante pour la prochaine insertion
