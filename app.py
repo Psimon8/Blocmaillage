@@ -23,15 +23,6 @@ def fill_empty_rows_with_format_nolimit(df, max_links):
         st.error("Le fichier importé ne contient pas suffisamment de données.")
         return df, 0
 
-    # Traiter les URLs
-    urls = df.iloc[:, 0].values
-    for i in range(len(urls)):
-        segments = get_url_segments(urls[i])
-        if len(segments) >= 3:
-            df.iloc[i, 2] = '/' + segments[-3] # Colonne C
-            df.iloc[i, 3] = '/' + segments[-2] # Colonne D
-            df.iloc[i, 4] = '/' + segments[-1] # Colonne E
-
     cells_completed = 0
 
     # Maillage
@@ -79,7 +70,12 @@ if uploaded_file is not None:
     if st.button('Exécuter la fonction'):
         # Exécuter les fonctions nécessaires
         for i in range(len(df)):
-            df.iloc[i, 2:5] = get_url_segments(df.iloc[i, 0])
+            segments = get_url_segments(df.iloc[i, 0])
+            if len(segments) >= 3:
+                df.iloc[i, 2] = '/' + segments[-3] # Colonne C
+                df.iloc[i, 3] = '/' + segments[-2] # Colonne D
+                df.iloc[i, 4] = '/' + segments[-1] # Colonne E
+        
         df, cells_completed = fill_empty_rows_with_format_nolimit(df, max_links)
         st.success(f'{cells_completed} cellules ont été complétées.')
 
