@@ -33,6 +33,22 @@ def fill_empty_rows_with_format_nolimit(df):
                     cells_completed += 1  # Incrémenter le compteur pour chaque cellule complétée
                     col_index += 1  # Passer à la colonne suivante pour la prochaine insertion
 
+        # Si le script est sur le dernier niveau (colonne F vide), mailler toutes les valeurs de H qui partagent les mêmes valeurs en C et D
+        if pd.isna(df.iloc[i, 5]):
+            c_value = df.iloc[i, 2]
+            d_value = df.iloc[i, 3]
+            matched_rows = df[(df.iloc[:, 2] == c_value) & (df.iloc[:, 3] == d_value)].index.tolist()
+            col_index = 0
+            for k in matched_rows:
+                if col_index >= 20:  # Limiter le nombre de liens ajoutés à 20
+                    break
+                if 8 + col_index < df.shape[1] and pd.isna(df.iloc[i, 8 + col_index]):  # Vérifier si la cellule cible est vide
+                    source_value = df.iloc[k, 7]  # 8 est la colonne H
+                    if source_value not in k_values.iloc[i]:  # Vérifier si la valeur est déjà présente dans H
+                        df.iloc[i, 8 + col_index] = source_value
+                        cells_completed += 1  # Incrémenter le compteur pour chaque cellule complétée
+                        col_index += 1  # Passer à la colonne suivante pour la prochaine insertion
+
     return df, cells_completed
 
 # Interface Streamlit
