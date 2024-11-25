@@ -28,31 +28,29 @@ def fill_empty_rows_with_format_nolimit(df, max_links):
     for i in range(len(urls)):
         segments = get_url_segments(urls[i])
         if len(segments) >= 3:
-            df.iloc[i, 2] = '/' + segments[-3]
-            df.iloc[i, 3] = '/' + segments[-2]
-            df.iloc[i, 4] = '/' + segments[-1]
+            df.iloc[i, 2] = '/' + segments[-3] # Colonne C
+            df.iloc[i, 3] = '/' + segments[-2] # Colonne D
+            df.iloc[i, 4] = '/' + segments[-1] # Colonne E
 
     cells_completed = 0
 
     # Maillage
     for i in range(last_row):
-        matched_rows = []
-        
-        # Recherche séquentielle F->E->D
-        for col in [5, 4, 2]:
-            if not matched_rows:
-                matched_rows = get_matching_urls(df, i, col)
-
-        if not matched_rows:
+        current_url = df.iloc[i, 7]  # URL actuelle
+        current_segments = get_url_segments(current_url)
+        if len(current_segments) < 3:
             continue
+
+        n_minus_1_segment = current_segments[-2]  # Segment N-1
+        matched_rows = df[df.iloc[:, 3] == '/' + n_minus_1_segment + '-'].index.tolist()  # Colonne D
 
         col_index = 0
         for k in matched_rows:
             if col_index >= max_links:
                 break
-            if col_index < max_links and 8 + col_index < df.shape[1]:
+            if 8 + col_index < df.shape[1] and pd.isna(df.iloc[i, 8 + col_index]):
                 source_value = df.iloc[k, 7]
-                if source_value not in df.iloc[i, 7:8+col_index].values:
+                if source_value != current_url and source_value not in df.iloc[i, 7:8+col_index].values:
                     df.iloc[i, 8 + col_index] = source_value
                     cells_completed += 1
                     col_index += 1
@@ -72,7 +70,6 @@ if uploaded_file is not None:
     st.write(df)
 
     if st.button('Exécuter la fonction'):
-        # Process URLs and generate segments
         df, cells_completed = fill_empty_rows_with_format_nolimit(df, max_links)
         st.success(f'{cells_completed} cellules ont été complétées.')
 
