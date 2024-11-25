@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import io
-from urllib.parse import urlparse
 import re
 
 def get_url_segments(url):
@@ -24,14 +23,14 @@ def fill_empty_rows_with_format_nolimit(df, max_links):
         st.error("Le fichier importé ne contient pas suffisamment de données.")
         return df, 0
 
-    # Extraire les segments d'URL
-    urls = df.iloc[:, 0].values # Colonne A
+    # Traiter les URLs
+    urls = df.iloc[:, 0].values
     for i in range(len(urls)):
         segments = get_url_segments(urls[i])
         if len(segments) >= 3:
-            df.iloc[i, 2] = '/' + segments[-3] # Colonne C
-            df.iloc[i, 3] = '/' + segments[-2] # Colonne D
-            df.iloc[i, 4] = '/' + segments[-1] # Colonne E
+            df.iloc[i, 2] = '/' + segments[-3]
+            df.iloc[i, 3] = '/' + segments[-2]
+            df.iloc[i, 4] = '/' + segments[-1]
 
     cells_completed = 0
 
@@ -40,7 +39,7 @@ def fill_empty_rows_with_format_nolimit(df, max_links):
         matched_rows = []
         
         # Recherche séquentielle F->E->D
-        for col in [5, 4, 2]: # F, E, D
+        for col in [5, 4, 2]:
             if not matched_rows:
                 matched_rows = get_matching_urls(df, i, col)
 
@@ -51,8 +50,8 @@ def fill_empty_rows_with_format_nolimit(df, max_links):
         for k in matched_rows:
             if col_index >= max_links:
                 break
-            if 8 + col_index < df.shape[1] and pd.isna(df.iloc[i, 8 + col_index]):
-                source_value = df.iloc[k, 7] # Colonne H
+            if col_index < max_links and 8 + col_index < df.shape[1]:
+                source_value = df.iloc[k, 7]
                 if source_value not in df.iloc[i, 7:8+col_index].values:
                     df.iloc[i, 8 + col_index] = source_value
                     cells_completed += 1
@@ -73,9 +72,11 @@ if uploaded_file is not None:
     st.write(df)
 
     if st.button('Exécuter la fonction'):
+        # Process URLs and generate segments
         df, cells_completed = fill_empty_rows_with_format_nolimit(df, max_links)
         st.success(f'{cells_completed} cellules ont été complétées.')
 
+        # Télécharger le fichier modifié
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
             df.to_excel(writer, index=False)
