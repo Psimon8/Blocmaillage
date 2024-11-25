@@ -76,6 +76,9 @@ if uploaded_file is not None:
                 df.iloc[i, 3] = '/' + segments[-2] # Colonne D
                 df.iloc[i, 4] = '/' + segments[-1] # Colonne E
         
+        st.write("Segments d'URL extraits et assignés aux colonnes C, D et E:")
+        st.write(df)
+
         df, cells_completed = fill_empty_rows_with_format_nolimit(df, max_links)
         st.success(f'{cells_completed} cellules ont été complétées.')
 
