@@ -47,6 +47,7 @@ if uploaded_file is not None:
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
             df.to_excel(writer, index=False)
+        buffer.seek(0)
         st.download_button(
             label="Télécharger le fichier XLSX",
             data=buffer,
