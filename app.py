@@ -78,6 +78,8 @@ if uploaded_file is not None:
 
     if st.button('Exécuter la fonction'):
         # Exécuter les fonctions nécessaires
+        for i in range(len(df)):
+            df.iloc[i, 2:5] = get_url_segments(df.iloc[i, 0])
         df, cells_completed = fill_empty_rows_with_format_nolimit(df, max_links)
         st.success(f'{cells_completed} cellules ont été complétées.')
 
