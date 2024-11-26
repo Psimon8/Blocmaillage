@@ -61,13 +61,38 @@ if uploaded_file:
         # Prepare the result for export
         export_df = result_df[['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']].copy()
 
-        # Unpack matches for N+3 and N+2 into unified "Link" columns
-        links = []
-        for matches in result_df['Matches (N+3)']:
-            links.extend(matches)
-        for matches in result_df['Matches (N+2)']:
-            links.extend(matches)
+        # Combine all links from Matches (N+3) and Matches (N+2)
+        max_links = 0
+        for i, row in result_df.iterrows():
+            all_links = row['Matches (N+3)'] + row['Matches (N+2)']  # Combine both lists
+            all_links = list(dict.fromkeys(all_links))  # Remove duplicates
+            for j, link in enumerate(all_links):
+                column_name = f'Link {j + 1}'
+                if column_name not in export_df.columns:
+                    export_df[column_name] = ''
+                export_df.at[i, column_name] = link
+            max_links = max(max_links, len(all_links))
 
-        # Create a new DataFrame for links
-        unique_links = list(dict.fromkeys(links))  # Remove duplicates
-        for i in range(len(link Nites)):
+        # Rearrange columns: Links to the left, followed by original columns
+        link_columns = [f'Link {i + 1}' for i in range(max_links)]
+        final_columns = link_columns + ['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']
+        export_df = export_df[final_columns]
+
+        # Display the results
+        st.write("Processed Results:")
+        st.dataframe(export_df)
+
+        # Export the results to an Excel file
+        output_file = "Processed_Maillage.xlsx"
+        export_df.to_excel(output_file, index=False, engine='openpyxl')
+
+        # Provide a download link
+        with open(output_file, "rb") as file:
+            st.download_button(
+                label="Download Processed File",
+                data=file,
+                file_name="Processed_Maillage.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
