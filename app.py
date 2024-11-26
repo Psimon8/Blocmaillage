@@ -15,39 +15,35 @@ if uploaded_file:
     # Function to create the maillage
     def create_maillage(df):
         result_df = df.copy()
-        result_df['Matches (N+3)'] = [[] for _ in range(len(result_df))]  # Initialize for N+3 matches
         result_df['Matches (N+2)'] = [[] for _ in range(len(result_df))]  # Initialize for N+2 matches
+        result_df['Matches (N+3)'] = [[] for _ in range(len(result_df))]  # Initialize for N+3 matches
 
-        # Step 1: Apply matching logic for N+3
-        for i, row in df.iterrows():
-            matches_n3 = []
-            # Find matches where N, N+1, and N+2 are the same and add only descendants
-            for j, compare_row in df.iterrows():
-                if i != j and (
-                    row['N'] == compare_row['N'] and 
-                    row['N+1'] == compare_row['N+1'] and 
-                    row['N+2'] == compare_row['N+2'] and
-                    row['N+3'] != compare_row['N+3']  # Exclude the current row
-                ):
-                    matches_n3.append((compare_row["URL"], compare_row["ancre"]))  # Tuple for display and Excel
-
-            # Assign matches
-            result_df.at[i, 'Matches (N+3)'] = matches_n3
-
-        # Step 2: Apply matching logic for N+2
+        # Step 1: Apply matching logic for N+2
         for i, row in df.iterrows():
             matches_n2 = []
-            # Find matches where N and N+1 are the same (ignoring N+3) and add only descendants
             for j, compare_row in df.iterrows():
                 if i != j and (
-                    row['N'] == compare_row['N'] and 
-                    row['N+1'] == compare_row['N+1'] and
-                    row['N+2'] != compare_row['N+2']  # Ensure they are descendants
+                    row['N+1'] == compare_row['N+1'] and  # N+1 must be identical
+                    pd.isna(compare_row['N+3']) and  # N+3 must be empty
+                    row['N+2'] != compare_row['N+2']  # Ensure distinct N+2 values
                 ):
                     matches_n2.append((compare_row["URL"], compare_row["ancre"]))  # Tuple for display and Excel
 
             # Assign matches
             result_df.at[i, 'Matches (N+2)'] = matches_n2
+
+        # Step 2: Apply matching logic for N+3
+        for i, row in df.iterrows():
+            matches_n3 = []
+            for j, compare_row in df.iterrows():
+                if i != j and (
+                    row['N+2'] == compare_row['N+2'] and  # N+2 must be identical
+                    row['N+3'] != compare_row['N+3']  # Ensure distinct N+3 values
+                ):
+                    matches_n3.append((compare_row["URL"], compare_row["ancre"]))  # Tuple for display and Excel
+
+            # Assign matches
+            result_df.at[i, 'Matches (N+3)'] = matches_n3
 
         return result_df
 
@@ -59,10 +55,10 @@ if uploaded_file:
         # Prepare the result for export and display
         export_df = result_df[['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']].copy()
 
-        # Combine all links from Matches (N+3) and Matches (N+2)
+        # Combine all links from Matches (N+2) and Matches (N+3)
         max_links = 0
         for i, row in result_df.iterrows():
-            all_links = row['Matches (N+3)'] + row['Matches (N+2)']  # Combine both lists
+            all_links = row['Matches (N+2)'] + row['Matches (N+3)']  # Combine both lists
             all_links = list(dict.fromkeys(all_links))  # Remove duplicates
             for j, (link_url, link_text) in enumerate(all_links):
                 column_name = f'Link {j + 1}'
