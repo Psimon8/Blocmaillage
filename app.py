@@ -55,7 +55,7 @@ if uploaded_file:
         return result_df
 
     try:
-        result_df = create_descending_maillage(df, max_links_per_url=5)
+        result_df = create_descending_maillage(df, max_links_per_url=100)
 
         # Prepare result for export
         export_df = result_df[['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']].copy()
