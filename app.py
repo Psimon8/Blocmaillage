@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Streamlit app title
 st.title("Hierarchy Maillage Processor")
@@ -17,7 +18,7 @@ if uploaded_file:
         st.stop()
 
     # Function to create the maillage
-    def create_maillage(df):
+    def create_maillage(df, max_links_per_url=5):  # Ajout du paramètre de limitation
         """
         Create maillage logic:
         1. Matches for N+2 are created where N+1 is identical, and N+3 is empty.
@@ -56,12 +57,19 @@ if uploaded_file:
             # Assign matches
             result_df.at[i, 'Matches (N+3)'] = matches_n3
 
+        # Limiter le nombre de liens
+        for i, row in result_df.iterrows():
+            matches_n2 = result_df.at[i, 'Matches (N+2)'][:max_links_per_url]
+            matches_n3 = result_df.at[i, 'Matches (N+3)'][:max_links_per_url]
+            result_df.at[i, 'Matches (N+2)'] = matches_n2
+            result_df.at[i, 'Matches (N+3)'] = matches_n3
+
         return result_df
 
     # Apply the maillage logic
     try:
         # Apply the logic to generate matches
-        result_df = create_maillage(df)
+        result_df = create_maillage(df, max_links_per_url=5)
 
         # Prepare the result for export
         export_df = result_df[['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']].copy()
@@ -85,6 +93,24 @@ if uploaded_file:
         # Display the processed results in Streamlit
         st.write("Processed Results:")
         st.dataframe(export_df)
+
+        # Ajout de la visualisation
+        st.subheader("Distribution des liens")
+        link_counts = export_df.filter(like='Link').notna().sum(axis=1)
+        fig = plt.figure(figsize=(10, 6))
+        plt.hist(link_counts, bins=20)
+        plt.xlabel("Nombre de liens par URL")
+        plt.ylabel("Fréquence")
+        st.pyplot(fig)
+
+        # Affichage avec liens cliquables
+        def make_clickable(url):
+            return f'<a href="{url}" target="_blank">{url}</a>'
+
+        clickable_df = export_df.copy()
+        clickable_df['URL'] = clickable_df['URL'].apply(make_clickable)
+        st.write("Processed Results:")
+        st.write(clickable_df.to_html(escape=False), unsafe_allow_html=True)
 
         # Export the results to an Excel file
         output_file = "Processed_Maillage.xlsx"
