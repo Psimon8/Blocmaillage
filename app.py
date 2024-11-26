@@ -15,11 +15,12 @@ if uploaded_file:
     # Function to create the maillage
     def create_maillage(df):
         result_df = df.copy()
-        result_df['Matches'] = ''  # Add a column for matches and initialize as empty strings
+        result_df['Matches (N+3)'] = ''  # Add a column for N+3 matches and initialize as empty strings
+        result_df['Matches (N+2)'] = ''  # Add a column for N+2 matches and initialize as empty strings
 
-        # Iterate over rows
+        # Step 1: Apply matching logic for N+3
         for i, row in df.iterrows():
-            matches = []
+            matches_n3 = []
             # Find matches where N, N+1, and N+2 are the same
             for j, compare_row in df.iterrows():
                 if i != j and (
@@ -27,9 +28,22 @@ if uploaded_file:
                     row['N+1'] == compare_row['N+1'] and 
                     row['N+2'] == compare_row['N+2']
                 ):
-                    matches.append(str(compare_row['N+3']))  # Ensure values are strings
+                    matches_n3.append(str(compare_row['N+3']))  # Ensure values are strings
             # Add matches to the result column
-            result_df.at[i, 'Matches'] = ', '.join(matches)
+            result_df.at[i, 'Matches (N+3)'] = ', '.join(matches_n3)
+
+        # Step 2: Apply matching logic for N+2
+        for i, row in df.iterrows():
+            matches_n2 = []
+            # Find matches where N and N+1 are the same (ignoring N+3)
+            for j, compare_row in df.iterrows():
+                if i != j and (
+                    row['N'] == compare_row['N'] and 
+                    row['N+1'] == compare_row['N+1']
+                ):
+                    matches_n2.append(str(compare_row['N+2']))  # Ensure values are strings
+            # Add matches to the result column
+            result_df.at[i, 'Matches (N+2)'] = ', '.join(matches_n2)
 
         return result_df
 
