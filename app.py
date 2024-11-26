@@ -29,7 +29,7 @@ if uploaded_file:
                     row['N+2'] == compare_row['N+2']
                 ):
                     # Create a hyperlink for the match
-                    hyperlink_n3 = f'=HYPERLINK("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
+                    hyperlink_n3 = f'=LIEN_HYPERTEXTE("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
                     matches_n3.append(hyperlink_n3)
 
             # Remove duplicates and assign matches
@@ -45,7 +45,7 @@ if uploaded_file:
                     row['N+1'] == compare_row['N+1']
                 ):
                     # Create a hyperlink for the match
-                    hyperlink_n2 = f'=HYPERLINK("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
+                    hyperlink_n2 = f'=LIEN_HYPERTEXTE("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
                     matches_n2.append(hyperlink_n2)
 
             # Remove duplicates and assign matches
@@ -61,35 +61,13 @@ if uploaded_file:
         # Prepare the result for export
         export_df = result_df[['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']].copy()
 
-        # Unpack matches for N+3
-        max_matches_n3 = result_df['Matches (N+3)'].apply(len).max()  # Get max matches for N+3
-        for match_idx in range(max_matches_n3):
-            export_df[f'Match N+3 - {match_idx + 1}'] = result_df['Matches (N+3)'].apply(
-                lambda x: x[match_idx] if len(x) > match_idx else ''  # Add matches to separate columns
-            )
+        # Unpack matches for N+3 and N+2 into unified "Link" columns
+        links = []
+        for matches in result_df['Matches (N+3)']:
+            links.extend(matches)
+        for matches in result_df['Matches (N+2)']:
+            links.extend(matches)
 
-        # Unpack matches for N+2
-        max_matches_n2 = result_df['Matches (N+2)'].apply(len).max()  # Get max matches for N+2
-        for match_idx in range(max_matches_n2):
-            export_df[f'Match N+2 - {match_idx + 1}'] = result_df['Matches (N+2)'].apply(
-                lambda x: x[match_idx] if len(x) > match_idx else ''  # Add matches to separate columns
-            )
-
-        # Display the results
-        st.write("Processed Results:")
-        st.dataframe(export_df)
-
-        # Export the results to an Excel file
-        output_file = "Processed_Maillage.xlsx"
-        export_df.to_excel(output_file, index=False, engine='openpyxl')
-
-        # Provide a download link
-        with open(output_file, "rb") as file:
-            st.download_button(
-                label="Download Processed File",
-                data=file,
-                file_name="Processed_Maillage.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+        # Create a new DataFrame for links
+        unique_links = list(dict.fromkeys(links))  # Remove duplicates
+        for i in range(len(link Nites)):
