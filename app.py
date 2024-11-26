@@ -29,8 +29,6 @@ if uploaded_file:
                     row['N+2'] == compare_row['N+2'] and
                     row['N+3'] != compare_row['N+3']  # Exclude the current row
                 ):
-                    # Create a hyperlink for the match
-                    hyperlink_n3 = f'=LIEN_HYPERTEXTE("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
                     matches_n3.append((compare_row["URL"], compare_row["ancre"]))  # Tuple for display and Excel
 
             # Assign matches
@@ -46,8 +44,6 @@ if uploaded_file:
                     row['N+1'] == compare_row['N+1'] and
                     row['N+2'] != compare_row['N+2']  # Ensure they are descendants
                 ):
-                    # Create a hyperlink for the match
-                    hyperlink_n2 = f'=LIEN_HYPERTEXTE("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
                     matches_n2.append((compare_row["URL"], compare_row["ancre"]))  # Tuple for display and Excel
 
             # Assign matches
@@ -72,23 +68,29 @@ if uploaded_file:
                 column_name = f'Link {j + 1}'
                 if column_name not in export_df.columns:
                     export_df[column_name] = ''
-                export_df.at[i, column_name] = f'=LIEN_HYPERTEXTE("{link_url}"; "{link_text}")'
+                export_df.at[i, column_name] = f"[{link_text}]({link_url})"  # Markdown for clickable links
             max_links = max(max_links, len(all_links))
 
         # Rearrange columns: Links to the left, followed by original columns
         link_columns = [f'Link {i + 1}' for i in range(max_links)]
-        final_columns = link_columns + ['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']
+        final_columns = ['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3'] + link_columns
         export_df = export_df[final_columns]
 
-        # Display the processed results in Streamlit
+        # Display the processed results in Streamlit as a clickable table
         st.write("Processed Results:")
-        for index, row in result_df.iterrows():
-            st.markdown(f"**Row {index + 1}:**")
-            links = row['Matches (N+3)'] + row['Matches (N+2)']
-            for link_url, link_text in links:
-                st.markdown(f"[{link_text}]({link_url})")  # Render as clickable link
+        st.markdown(
+            export_df.to_html(escape=False, index=False), unsafe_allow_html=True
+        )  # Render the links as clickable in the table
 
         # Export the results to an Excel file
+        for col in link_columns:
+            if col in export_df.columns:
+                # Convert Markdown links back to Excel-friendly hyperlinks
+                export_df[col] = export_df[col].apply(
+                    lambda x: x.replace("[", "").replace("](", ";").replace(")", "").replace("(", "")
+                )
+                export_df[col] = export_df[col].apply(lambda x: f'=LIEN_HYPERTEXTE{x}')
+
         output_file = "Processed_Maillage.xlsx"
         export_df.to_excel(output_file, index=False, engine='openpyxl')
 
