@@ -15,11 +15,12 @@ if uploaded_file:
     # Function to create the maillage
     def create_maillage(df):
         result_df = df.copy()
-        result_df['Matches'] = [[] for _ in range(len(result_df))]  # Initialize as lists for storing multiple matches
+        result_df['Matches (N+3)'] = [[] for _ in range(len(result_df))]  # Initialize for N+3 matches
+        result_df['Matches (N+2)'] = [[] for _ in range(len(result_df))]  # Initialize for N+2 matches
 
-        # Iterate over rows
+        # Step 1: Apply matching logic for N+3
         for i, row in df.iterrows():
-            matches = []
+            matches_n3 = []
             # Find matches where N, N+1, and N+2 are the same
             for j, compare_row in df.iterrows():
                 if i != j and (
@@ -28,11 +29,27 @@ if uploaded_file:
                     row['N+2'] == compare_row['N+2']
                 ):
                     # Create a hyperlink for the match
-                    hyperlink = f'=HYPERLINK("{compare_row["URL"]}", "{compare_row["ancre"]}")'
-                    matches.append(hyperlink)  # Add hyperlink to matches
+                    hyperlink_n3 = f'=HYPERLINK("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
+                    matches_n3.append(hyperlink_n3)
 
             # Remove duplicates and assign matches
-            result_df.at[i, 'Matches'] = list(set(matches))  # Ensure unique matches
+            result_df.at[i, 'Matches (N+3)'] = list(set(matches_n3))
+
+        # Step 2: Apply matching logic for N+2
+        for i, row in df.iterrows():
+            matches_n2 = []
+            # Find matches where N and N+1 are the same (ignoring N+3)
+            for j, compare_row in df.iterrows():
+                if i != j and (
+                    row['N'] == compare_row['N'] and 
+                    row['N+1'] == compare_row['N+1']
+                ):
+                    # Create a hyperlink for the match
+                    hyperlink_n2 = f'=HYPERLINK("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
+                    matches_n2.append(hyperlink_n2)
+
+            # Remove duplicates and assign matches
+            result_df.at[i, 'Matches (N+2)'] = list(set(matches_n2))
 
         return result_df
 
@@ -44,10 +61,17 @@ if uploaded_file:
         # Prepare the result for export
         export_df = result_df[['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']].copy()
 
-        # Unpack matches into separate columns
-        max_matches = result_df['Matches'].apply(len).max()  # Get the maximum number of matches
-        for match_idx in range(max_matches):
-            export_df[f'Match {match_idx + 1}'] = result_df['Matches'].apply(
+        # Unpack matches for N+3
+        max_matches_n3 = result_df['Matches (N+3)'].apply(len).max()  # Get max matches for N+3
+        for match_idx in range(max_matches_n3):
+            export_df[f'Match N+3 - {match_idx + 1}'] = result_df['Matches (N+3)'].apply(
+                lambda x: x[match_idx] if len(x) > match_idx else ''  # Add matches to separate columns
+            )
+
+        # Unpack matches for N+2
+        max_matches_n2 = result_df['Matches (N+2)'].apply(len).max()  # Get max matches for N+2
+        for match_idx in range(max_matches_n2):
+            export_df[f'Match N+2 - {match_idx + 1}'] = result_df['Matches (N+2)'].apply(
                 lambda x: x[match_idx] if len(x) > match_idx else ''  # Add matches to separate columns
             )
 
