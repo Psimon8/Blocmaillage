@@ -9,18 +9,17 @@ uploaded_file = st.file_uploader("Upload an Excel file", type=["xlsx"])
 
 if uploaded_file:
     # Read the Excel file
-    df = pd.read_excel(uploaded_file, usecols="A,C,D,E,F")
-    df.columns = ['URL', 'N', 'N+1', 'N+2', 'N+3']  # Rename columns
+    df = pd.read_excel(uploaded_file, usecols="A,B,C,D,E,F")
+    df.columns = ['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']  # Rename columns
 
     # Function to create the maillage
     def create_maillage(df):
         result_df = df.copy()
-        result_df['Matches (N+3)'] = ''  # Add a column for N+3 matches and initialize as empty strings
-        result_df['Matches (N+2)'] = ''  # Add a column for N+2 matches and initialize as empty strings
+        result_df['Matches'] = [[] for _ in range(len(result_df))]  # Initialize as lists for storing multiple matches
 
-        # Step 1: Apply matching logic for N+3
+        # Iterate over rows
         for i, row in df.iterrows():
-            matches_n3 = []
+            matches = []
             # Find matches where N, N+1, and N+2 are the same
             for j, compare_row in df.iterrows():
                 if i != j and (
@@ -28,36 +27,39 @@ if uploaded_file:
                     row['N+1'] == compare_row['N+1'] and 
                     row['N+2'] == compare_row['N+2']
                 ):
-                    matches_n3.append(str(compare_row['N+3']))  # Ensure values are strings
-            # Add matches to the result column
-            result_df.at[i, 'Matches (N+3)'] = ', '.join(matches_n3)
+                    # Create a hyperlink for the match
+                    hyperlink = f'=HYPERLINK("{compare_row["URL"]}", "{compare_row["ancre"]}")'
+                    matches.append(hyperlink)  # Add hyperlink to matches
 
-        # Step 2: Apply matching logic for N+2
-        for i, row in df.iterrows():
-            matches_n2 = []
-            # Find matches where N and N+1 are the same (ignoring N+3)
-            for j, compare_row in df.iterrows():
-                if i != j and (
-                    row['N'] == compare_row['N'] and 
-                    row['N+1'] == compare_row['N+1']
-                ):
-                    matches_n2.append(str(compare_row['N+2']))  # Ensure values are strings
-            # Add matches to the result column
-            result_df.at[i, 'Matches (N+2)'] = ', '.join(matches_n2)
+            # Remove duplicates and assign matches
+            result_df.at[i, 'Matches'] = list(set(matches))  # Ensure unique matches
 
         return result_df
 
     # Apply the maillage logic
     try:
+        # Apply the logic to generate matches
         result_df = create_maillage(df)
+
+        # Prepare the result for export
+        export_df = result_df[['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']].copy()
+
+        # Unpack matches into separate columns
+        max_matches = result_df['Matches'].apply(len).max()  # Get the maximum number of matches
+        for match_idx in range(max_matches):
+            export_df[f'Match {match_idx + 1}'] = result_df['Matches'].apply(
+                lambda x: x[match_idx] if len(x) > match_idx else ''  # Add matches to separate columns
+            )
 
         # Display the results
         st.write("Processed Results:")
-        st.dataframe(result_df)
+        st.dataframe(export_df)
+
+        # Export the results to an Excel file
+        output_file = "Processed_Maillage.xlsx"
+        export_df.to_excel(output_file, index=False, engine='openpyxl')
 
         # Provide a download link
-        output_file = "Processed_Maillage.xlsx"
-        result_df.to_excel(output_file, index=False)
         with open(output_file, "rb") as file:
             st.download_button(
                 label="Download Processed File",
