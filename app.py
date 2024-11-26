@@ -1,95 +1,48 @@
 import streamlit as st
 import pandas as pd
-import io
-import re
 
-def get_url_segments(url):
-    """Extrait les segments de l'URL après le domaine et retire les chiffres"""
-    segments = url.split('/')[3:] # Ignorer http:, '', domain
-    segments = [re.sub(r'[0-9]', '', segment) + '-' for segment in segments if segment]
-    return segments
+# Streamlit app title
+st.title("Hierarchy Maillage Processor")
 
-def get_matching_urls(df, current_index, segment_col):
-    """Trouve les URLs qui partagent le même segment"""
-    current_segment = df.iloc[current_index, segment_col]
-    if pd.isna(current_segment):
-        return []
-    matches = df[df.iloc[:, segment_col] == current_segment].index.tolist()
-    return [idx for idx in matches if idx != current_index]
+# File upload
+uploaded_file = st.file_uploader("Upload an Excel file", type=["xlsx"])
 
-def fill_empty_rows_with_format_nolimit(df, max_links):
-    last_row = len(df)
-    if last_row == 0 or df.shape[1] < 9:
-        st.error("Le fichier importé ne contient pas suffisamment de données.")
-        return df, 0
+if uploaded_file:
+    # Read the Excel file
+    df = pd.read_excel(uploaded_file, usecols="A,C,D,E,F")
+    df.columns = ['URL', 'N', 'N+1', 'N+2', 'N+3']  # Rename columns
 
-    cells_completed = 0
+    # Function to create the maillage
+    def create_maillage(df):
+        result_df = df.copy()
+        result_df['Matches'] = ''  # Add a column for matches
 
-    # Maillage
-    for i in range(last_row):
-        current_url = df.iloc[i, 7]  # URL actuelle
-        current_segments = get_url_segments(current_url)
-        if len(current_segments) < 3:
-            continue
+        # Iterate over rows
+        for i, row in df.iterrows():
+            matches = []
+            # Find matches where N, N+1, and N+2 are the same
+            for j, compare_row in df.iterrows():
+                if i != j and (row['N'] == compare_row['N'] and row['N+1'] == compare_row['N+1'] and row['N+2'] == compare_row['N+2']):
+                    matches.append(compare_row['N+3'])
+            # Add matches to the result column
+            result_df.at[i, 'Matches'] = ', '.join(matches)
 
-        matched_rows = []
-        
-        # Recherche séquentielle F->E->D
-        for col in [5, 4, 2]:
-            if not matched_rows:
-                matched_rows = get_matching_urls(df, i, col)
+        return result_df
 
-        if not matched_rows:
-            continue
+    # Apply the maillage logic
+    result_df = create_maillage(df)
 
-        col_index = 0
-        for k in matched_rows:
-            if col_index >= max_links:
-                break
-            if col_index < max_links and 8 + col_index < df.shape[1]:
-                source_value = df.iloc[k, 7]
-                if source_value not in df.iloc[i, 7:8+col_index].values:
-                    df.iloc[i, 8 + col_index] = source_value
-                    cells_completed += 1
-                    col_index += 1
+    # Display the results
+    st.write("Processed Results:")
+    st.dataframe(result_df)
 
-    return df, cells_completed
-
-# Interface Streamlit
-st.title('Completer Bloc de Maillage V2 - Maillage inter Nolimit')
-
-max_links = st.slider('Nombre maximum de liens', min_value=5, max_value=50, value=20)
-
-uploaded_file = st.file_uploader("Choisissez un fichier XLSX", type="xlsx")
-
-if uploaded_file is not None:
-    df = pd.read_excel(uploaded_file)
-    st.write("Aperçu du fichier importé:")
-    st.write(df)
-
-    if st.button('Exécuter la fonction'):
-        # Exécuter les fonctions nécessaires
-        for i in range(len(df)):
-            segments = get_url_segments(df.iloc[i, 0])
-            if len(segments) >= 3:
-                df.iloc[i, 2] = '/' + segments[-3] # Colonne C
-                df.iloc[i, 3] = '/' + segments[-2] # Colonne D
-                df.iloc[i, 4] = '/' + segments[-1] # Colonne E
-        
-        st.write("Segments d'URL extraits et assignés aux colonnes C, D et E:")
-        st.write(df)
-
-        df, cells_completed = fill_empty_rows_with_format_nolimit(df, max_links)
-        st.success(f'{cells_completed} cellules ont été complétées.')
-
-        # Télécharger le fichier modifié
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False)
-        buffer.seek(0)
+    # Provide a download link
+    output_file = "Processed_Maillage.xlsx"
+    result_df.to_excel(output_file, index=False)
+    with open(output_file, "rb") as file:
         st.download_button(
-            label="Télécharger le fichier XLSX",
-            data=buffer,
-            file_name="fichier_modifie.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            label="Download Processed File",
+            data=file,
+            file_name="Processed_Maillage.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
