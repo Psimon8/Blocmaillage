@@ -75,7 +75,7 @@ if uploaded_file:
 
         # Rearrange columns: Links to the left, followed by original columns
         link_columns = [f'Link {i + 1}' for i in range(max_links)]
-        final_columns = link_columns + ['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']
+        final_columns = ['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3'] + link_columns
         export_df = export_df[final_columns]
 
         # Display the results
