@@ -21,15 +21,16 @@ if uploaded_file:
         # Step 1: Apply matching logic for N+3
         for i, row in df.iterrows():
             matches_n3 = []
-            # Find matches where N, N+1, and N+2 are the same
+            # Find matches where N, N+1, and N+2 are the same and add only descendants
             for j, compare_row in df.iterrows():
                 if i != j and (
                     row['N'] == compare_row['N'] and 
                     row['N+1'] == compare_row['N+1'] and 
-                    row['N+2'] == compare_row['N+2']
+                    row['N+2'] == compare_row['N+2'] and
+                    row['N+3'] != compare_row['N+3']  # Exclude the current row
                 ):
                     # Create a hyperlink for the match
-                    hyperlink_n3 = f'=LIEN_HYPERTEXTE("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
+                    hyperlink_n3 = f'=HYPERLINK("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
                     matches_n3.append(hyperlink_n3)
 
             # Remove duplicates and assign matches
@@ -38,14 +39,15 @@ if uploaded_file:
         # Step 2: Apply matching logic for N+2
         for i, row in df.iterrows():
             matches_n2 = []
-            # Find matches where N and N+1 are the same (ignoring N+3)
+            # Find matches where N and N+1 are the same (ignoring N+3) and add only descendants
             for j, compare_row in df.iterrows():
                 if i != j and (
                     row['N'] == compare_row['N'] and 
-                    row['N+1'] == compare_row['N+1']
+                    row['N+1'] == compare_row['N+1'] and
+                    row['N+2'] != compare_row['N+2']  # Ensure they are descendants
                 ):
                     # Create a hyperlink for the match
-                    hyperlink_n2 = f'=LIEN_HYPERTEXTE("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
+                    hyperlink_n2 = f'=HYPERLINK("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
                     matches_n2.append(hyperlink_n2)
 
             # Remove duplicates and assign matches
@@ -75,7 +77,7 @@ if uploaded_file:
 
         # Rearrange columns: Links to the left, followed by original columns
         link_columns = [f'Link {i + 1}' for i in range(max_links)]
-        final_columns = ['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3'] + link_columns
+        final_columns = link_columns + ['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']
         export_df = export_df[final_columns]
 
         # Display the results
