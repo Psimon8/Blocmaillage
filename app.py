@@ -30,11 +30,11 @@ if uploaded_file:
                     row['N+3'] != compare_row['N+3']  # Exclude the current row
                 ):
                     # Create a hyperlink for the match
-                    hyperlink_n3 = f'=HYPERLINK("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
-                    matches_n3.append(hyperlink_n3)
+                    hyperlink_n3 = f'=LIEN_HYPERTEXTE("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
+                    matches_n3.append((compare_row["URL"], compare_row["ancre"]))  # Tuple for display and Excel
 
-            # Remove duplicates and assign matches
-            result_df.at[i, 'Matches (N+3)'] = list(set(matches_n3))
+            # Assign matches
+            result_df.at[i, 'Matches (N+3)'] = matches_n3
 
         # Step 2: Apply matching logic for N+2
         for i, row in df.iterrows():
@@ -47,11 +47,11 @@ if uploaded_file:
                     row['N+2'] != compare_row['N+2']  # Ensure they are descendants
                 ):
                     # Create a hyperlink for the match
-                    hyperlink_n2 = f'=HYPERLINK("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
-                    matches_n2.append(hyperlink_n2)
+                    hyperlink_n2 = f'=LIEN_HYPERTEXTE("{compare_row["URL"]}"; "{compare_row["ancre"]}")'
+                    matches_n2.append((compare_row["URL"], compare_row["ancre"]))  # Tuple for display and Excel
 
-            # Remove duplicates and assign matches
-            result_df.at[i, 'Matches (N+2)'] = list(set(matches_n2))
+            # Assign matches
+            result_df.at[i, 'Matches (N+2)'] = matches_n2
 
         return result_df
 
@@ -60,7 +60,7 @@ if uploaded_file:
         # Apply the logic to generate matches
         result_df = create_maillage(df)
 
-        # Prepare the result for export
+        # Prepare the result for export and display
         export_df = result_df[['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']].copy()
 
         # Combine all links from Matches (N+3) and Matches (N+2)
@@ -68,11 +68,11 @@ if uploaded_file:
         for i, row in result_df.iterrows():
             all_links = row['Matches (N+3)'] + row['Matches (N+2)']  # Combine both lists
             all_links = list(dict.fromkeys(all_links))  # Remove duplicates
-            for j, link in enumerate(all_links):
+            for j, (link_url, link_text) in enumerate(all_links):
                 column_name = f'Link {j + 1}'
                 if column_name not in export_df.columns:
                     export_df[column_name] = ''
-                export_df.at[i, column_name] = link
+                export_df.at[i, column_name] = f'=LIEN_HYPERTEXTE("{link_url}"; "{link_text}")'
             max_links = max(max_links, len(all_links))
 
         # Rearrange columns: Links to the left, followed by original columns
@@ -80,9 +80,13 @@ if uploaded_file:
         final_columns = link_columns + ['URL', 'ancre', 'N', 'N+1', 'N+2', 'N+3']
         export_df = export_df[final_columns]
 
-        # Display the results
+        # Display the processed results in Streamlit
         st.write("Processed Results:")
-        st.dataframe(export_df)
+        for index, row in result_df.iterrows():
+            st.markdown(f"**Row {index + 1}:**")
+            links = row['Matches (N+3)'] + row['Matches (N+2)']
+            for link_url, link_text in links:
+                st.markdown(f"[{link_text}]({link_url})")  # Render as clickable link
 
         # Export the results to an Excel file
         output_file = "Processed_Maillage.xlsx"
